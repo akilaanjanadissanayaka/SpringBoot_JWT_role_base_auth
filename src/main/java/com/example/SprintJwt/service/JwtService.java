@@ -1,6 +1,7 @@
 package com.example.SprintJwt.service;
 
 import com.example.SprintJwt.model.User;
+import com.example.SprintJwt.repository.TokenRipository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -16,14 +17,20 @@ import java.util.function.Function;
 @Service
 public class JwtService {
     private final String SECRET_KEY="8b1d35c845a6097d44f32153d19c0e54d4b8f26adcec66d19349ada5c13dad2f";
+    private final TokenRipository tokenRipository;
+
+    public JwtService(TokenRipository tokenRipository) {
+        this.tokenRipository = tokenRipository;
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
     public boolean isValid(String token, UserDetails user) {
         String username = extractUsername(token);
-
-        return (username.equals(user.getUsername()))&& !isTokenExpired(token) ;
+        boolean isValidToken=tokenRipository.findByToken(token)
+                .map(t->!t.isLoggedOut()).orElse(false);
+        return (username.equals(user.getUsername()))&& !isTokenExpired(token)  && isValidToken;
     }
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
